@@ -1,11 +1,11 @@
 var request = require('request');
 
-// const apiOptions = {
-//   server: 'http://localhost:3000'
-// };
-// if(process.env.NODE_ENV === 'production'){
+const apiOptions = {
+  server: 'http://localhost:3000'
+};
+if(process.env.NODE_ENV === 'production'){
   apiOptions.server  = 'https://loc8r-api-miof.onrender.com/';
-// }
+}
 
 const homelist = (req, res) => {
   const path = '/api/locations';
