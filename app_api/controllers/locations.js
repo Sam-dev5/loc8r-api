@@ -89,22 +89,24 @@ const locationsCreate = (req, res) => {
   });
 };
 
-const locationsReadOne = async (req, res) => {
-  try {
-    const location = await Loc.findById(req.params.locationid).exec();
-    if (!location) {
-      return res
-        .status(404)
-        .json({ "message": "location not found" });
-    }
-    return res
-      .status(200)
-      .json(location);
-  } catch (err) {
-    return res
-      .status(404)
-      .json(err);
-  }
+const locationsReadOne = (req, res) => {
+    Loc
+      .findById(req.params.locationid)
+      .exec((err, location) => {
+        if (!location) {
+          return res
+            .status(404)
+            .json({"message": "location not found"});
+        } else if (err) {
+          return res
+            .status(404)
+            .json(err);
+        } else {
+          return res
+            .status(200)
+            .json(location);
+        }
+      });
 };
 
 const locationsUpdateOne = (req, res) => {
