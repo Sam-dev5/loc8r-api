@@ -49,67 +49,68 @@ const locationsListByDistance = async (req, res) => {
   }
 };
 
-const locationsCreate = (req, res) => {
-  Loc.create({
-    name: req.body.name,
-    address: req.body.address,
-    facilities: req.body.facilities.split(","),
-    coords: {
-      type: "Point",
-      coordinates: [
-        parseFloat(req.body.lng),
-        parseFloat(req.body.lat)
-       ]
-    },
-    openingTimes: [
-      {
-        days: req.body.days1,
-        opening: req.body.opening1,
-        closing: req.body.closing1,
-        closed: req.body.closed1
+const locationsCreate = async (req, res) => {
+  try {
+    const location = await Loc.create({
+      name: req.body.name,
+      address: req.body.address,
+      facilities: req.body.facilities.split(","),
+      coords: {
+        type: "Point",
+        coordinates: [
+          parseFloat(req.body.lng),
+          parseFloat(req.body.lat)
+        ]
       },
-      {
-        days: req.body.days2,
-        opening: req.body.opening2,
-        closing: req.body.closing2,
-        closed: req.body.closed2
-      }
-    ]
-  },
-  (err, location) => {
-    if (err) {
-      res
-        .status(400)
-        .json(err);
-    } else {
-      res
-        .status(201)
-        .json(location);
-    }
-  });
-};
-
-const locationsReadOne = (req, res) => {
-    Loc
-      .findById(req.params.locationid)
-      .exec((err, location) => {
-        if (!location) {
-          return res
-            .status(404)
-            .json({"message": "location not found"});
-        } else if (err) {
-          return res
-            .status(404)
-            .json(err);
-        } else {
-          return res
-            .status(200)
-            .json(location);
+      openingTimes: [
+        {
+          days: req.body.days1,
+          opening: req.body.opening1,
+          closing: req.body.closing1,
+          closed: req.body.closed1
+        },
+        {
+          days: req.body.days2,
+          opening: req.body.opening2,
+          closing: req.body.closing2,
+          closed: req.body.closed2
         }
-      });
+      ]
+    });
+
+    // 성공적으로 생성된 location을 반환
+    return res
+      .status(201)
+      .json(location);
+
+  } catch (err) {
+    // 오류 발생 시 400 에러 반환
+    return res
+      .status(400)
+      .json(err);
+  }
 };
 
-const locationsUpdateOne = (req, res) => {
+const locationsReadOne = async (req, res) => {
+  try {
+    const location = await Loc.findById(req.params.locationid).exec();
+    if (!location) {
+      return res
+        .status(404)
+        .json({ "message": "location not found" });
+    }
+    return res
+      .status(200)
+      .json(location);
+  } catch (err) {
+    return res
+      .status(404)
+      .json(err);
+  }
+};
+
+
+const locationsUpdateOne = async (req, res) => {
   if (!req.params.locationid) {
     return res
       .status(404)
@@ -117,76 +118,70 @@ const locationsUpdateOne = (req, res) => {
         "message": "Not found, locationid is required"
       });
   }
-  Loc
-    .findById(req.params.locationid)
-    .select('-reviews -rating')
-    .exec((err, location) => {
-      if (!location) {
-        return res
-          .status(404)
-          .json({
-            "message": "locationid not found"
-          });
-      } else if (err) {
-        return res
-          .status(400)
-          .json(err);
-      }
-      location.name = req.body.name;
-      location.address = req.body.address;
-      location.facilities = req.body.facilities.split(',');
-      location.coords = [
-        parseFloat(req.body.lng),
-        parseFloat(req.body.lat)
-      ];
-      location.openingTimes = [{
-        days: req.body.days1,
-        opening: req.body.opening1,
-        closing: req.body.closing1,
-        closed: req.body.closed1,
-      }, {
-        days: req.body.days2,
-        opening: req.body.opening2,
-        closing: req.body.closing2,
-        closed: req.body.closed2,
-      }];
-      location.save((err, loc) => {
-        if (err) {
-          res
-            .status(404)
-            .json(err);
-        } else {
-          res
-            .status(200)
-            .json(loc);
-        }
-      });
+  try {
+    const location = await Loc.findById(req.params.locationid).select('-reviews -rating').exec();
+    
+    if (!location) {
+      return res
+        .status(404)
+        .json({
+          "message": "locationid not found"
+        });
     }
-  );
+    location.name = req.body.name;
+    location.address = req.body.address;
+    location.facilities = req.body.facilities.split(',');
+    location.coords = [
+      parseFloat(req.body.lng),
+      parseFloat(req.body.lat)
+    ];
+    location.openingTimes = [{
+      days: req.body.days1,
+      opening: req.body.opening1,
+      closing: req.body.closing1,
+      closed: req.body.closed1,
+    }, {
+      days: req.body.days2,
+      opening: req.body.opening2,
+      closing: req.body.closing2,
+      closed: req.body.closed2,
+    }];
+    const updatedLocation = await location.save();
+    return res
+      .status(200)
+      .json(updatedLocation);
+  } catch (err) {
+    return res
+      .status(400)
+      .json(err);
+  }
 };
 
-const locationsDeleteOne = (req, res) => {
-  const {locationid} = req.params;
-  if (locationid) {
-    Loc
-      .findByIdAndRemove(locationid)
-      .exec((err, location) => {
-          if (err) {
-            return res
-              .status(404)
-              .json(err);
-          }
-          res
-            .status(204)
-            .json(null);
-        }
-    );
-  } else {
-    res
+const locationsDeleteOne = async (req, res) => {
+  const { locationid } = req.params;
+  if (!locationid) {
+    return res
       .status(404)
       .json({
         "message": "No Location"
       });
+  }
+  try {
+    const location = await Loc.findByIdAndRemove(locationid).exec();
+    if (!location) {
+      return res
+        .status(404)
+        .json({
+          "message": "locationid not found"
+        });
+    }
+    return res
+      .status(204)
+      .json(null);
+  } catch (err) {
+    return res
+      .status(404)
+      .json(err);
   }
 };
 
